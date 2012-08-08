@@ -1,4 +1,4 @@
-// $ANTLR 3.0.1 JS.g 2012-07-13 22:31:37
+// $ANTLR 3.0.1 JS.g 2012-08-08 18:09:45
 
 package org.eclipse.dltk.javascript.parser;
 
@@ -8,7 +8,6 @@ import java.util.Stack;
 import java.util.List;
 import java.util.ArrayList;
 
-@SuppressWarnings({"unused"})
 public class JSLexer extends Lexer {
     public static final int PACKAGE=58;
     public static final int FUNCTION=18;

@@ -1098,7 +1098,7 @@ leftHandSideExpression
   (
     arguments     -> ^( CALL $leftHandSideExpression arguments )
     | lb1=LBRACK expression RBRACK  -> ^( BYINDEX[$lb1] $leftHandSideExpression expression )
-    | DOT r=rightHandSideExpression -> ^( BYFIELD $leftHandSideExpression DOT $r? )
+    | DOT { promoteEOL(null); } r=rightHandSideExpression -> ^( BYFIELD $leftHandSideExpression DOT $r? )
     | { isXmlEnabled() }?=> DOTDOT r2=rightHandSideExpression2 -> ^(ALLCHILDREN $leftHandSideExpression $r2)
     | { isXmlEnabled() }?=> COLONCOLON LBRACK expression RBRACK -> ^(LOCALNAME $leftHandSideExpression expression)
     | { isXmlEnabled() }?=> COLONCOLON ps=propertySelector -> ^(LOCALNAME $leftHandSideExpression $ps?)
@@ -1115,7 +1115,7 @@ newExpressionTail
   )
   (
     lb1=LBRACK expression RBRACK  -> ^( BYINDEX[$lb1] $newExpressionTail expression )
-    | DOT r=rightHandSideExpression -> ^( BYFIELD $newExpressionTail DOT $r? )
+    | DOT { promoteEOL(null); } r=rightHandSideExpression -> ^( BYFIELD $newExpressionTail DOT $r? )
     | { isXmlEnabled() }?=> DOTDOT r2=rightHandSideExpression2 -> ^(ALLCHILDREN $newExpressionTail $r2)
     | { isXmlEnabled() }?=> COLONCOLON LBRACK expression RBRACK -> ^(LOCALNAME $newExpressionTail expression)
     | { isXmlEnabled() }?=> COLONCOLON ps=propertySelector -> ^(LOCALNAME $newExpressionTail $ps?)
