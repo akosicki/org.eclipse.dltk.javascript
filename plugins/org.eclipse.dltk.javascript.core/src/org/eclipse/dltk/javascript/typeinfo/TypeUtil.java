@@ -24,6 +24,9 @@ import org.eclipse.dltk.javascript.typeinfo.model.Constructor;
 import org.eclipse.dltk.javascript.typeinfo.model.JSType;
 import org.eclipse.dltk.javascript.typeinfo.model.MapType;
 import org.eclipse.dltk.javascript.typeinfo.model.Member;
+import org.eclipse.dltk.javascript.typeinfo.model.Method;
+import org.eclipse.dltk.javascript.typeinfo.model.Parameter;
+import org.eclipse.dltk.javascript.typeinfo.model.ParameterKind;
 import org.eclipse.dltk.javascript.typeinfo.model.ParameterizedType;
 import org.eclipse.dltk.javascript.typeinfo.model.RecordType;
 import org.eclipse.dltk.javascript.typeinfo.model.SimpleType;
@@ -124,6 +127,8 @@ public class TypeUtil {
 	public static Type extractType(ITypeSystem context, IRType type) {
 		if (type instanceof IRSimpleType) {
 			return ((IRSimpleType) type).getTarget();
+		} else if (type instanceof IRFunctionType) {
+			return createCustomFunctionType(context, (IRFunctionType) type);
 		} else if (type instanceof IRArrayType) {
 			final IRArrayType arrayType = (IRArrayType) type;
 			final ITypeSystem saved = arrayType.activeTypeSystem();
@@ -139,6 +144,79 @@ public class TypeUtil {
 		} else {
 			return null;
 		}
+	}
+
+	private static Type createCustomFunctionType(ITypeSystem context,
+			IRFunctionType iRFunctionType) {
+		Type type = TypeInfoModelFactory.eINSTANCE.createType();
+		type.setSuperType(TypeInfoModelLoader.getInstance().getType(
+				ITypeNames.FUNCTION));
+		List<Member> members = type.getMembers();
+
+		// override 'call' & 'override' method in order to provide better
+		// signatures
+		{
+			Method callMethod = TypeInfoModelFactory.eINSTANCE.createMethod();
+			callMethod.setName("call");
+			callMethod.setType(ref(extractType(context,
+					iRFunctionType.getReturnType())));
+
+			List<Parameter> parameters = callMethod.getParameters();
+			Parameter thisArg = TypeInfoModelFactory.eINSTANCE
+					.createParameter();
+			thisArg.setName("thisArg");
+			parameters.add(thisArg);
+
+			int argNum = 1;
+			boolean allOptional = true;
+			for (IRParameter iRParameter : iRFunctionType.getParameters()) {
+				Parameter origParameter = TypeInfoModelFactory.eINSTANCE
+						.createParameter();
+				origParameter.setName("arg" + argNum);
+				origParameter.setType(ref(extractType(context,
+						iRParameter.getType())));
+				ParameterKind origParameterKind = iRParameter.getKind();
+				origParameter.setKind(origParameterKind);
+				allOptional &= iRParameter.getKind() != ParameterKind.NORMAL;
+
+				parameters.add(origParameter);
+				argNum++;
+			}
+			if (allOptional) {
+				thisArg.setKind(ParameterKind.OPTIONAL);
+			}
+
+			members.add(callMethod);
+		}
+
+		{
+			Method applyMethod = TypeInfoModelFactory.eINSTANCE.createMethod();
+			applyMethod.setName("apply");
+			applyMethod.setType(ref(extractType(context,
+					iRFunctionType.getReturnType())));
+
+			List<Parameter> parameters = applyMethod.getParameters();
+			Parameter thisArg = TypeInfoModelFactory.eINSTANCE
+					.createParameter();
+			thisArg.setName("thisArg");
+			thisArg.setKind(ParameterKind.OPTIONAL);
+			parameters.add(thisArg);
+
+			Parameter argArray = TypeInfoModelFactory.eINSTANCE
+					.createParameter();
+			argArray.setName("argArray");
+			ArrayType arrayType = TypeInfoModelFactory.eINSTANCE
+					.createArrayType();
+			arrayType.setItemType(TypeInfoModelFactory.eINSTANCE
+					.createAnyType());
+			argArray.setType(arrayType);
+			argArray.setKind(ParameterKind.OPTIONAL);
+			parameters.add(argArray);
+
+			members.add(applyMethod);
+		}
+
+		return type;
 	}
 
 	public static JSType extractArrayItemType(JSType type,
