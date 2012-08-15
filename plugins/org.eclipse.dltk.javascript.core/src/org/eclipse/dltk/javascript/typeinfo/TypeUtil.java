@@ -146,6 +146,12 @@ public class TypeUtil {
 		}
 	}
 
+	private static final String FUNCTION_ARG_ARRAY = "argArray";
+	private static final String FUNCTION_APPLY = "apply";
+	private static final String FUNCTION_ARG = "arg";
+	private static final String FUNCTION_THIS_ARG = "thisArg";
+	private static final String FUNCTION_CALL = "call";
+
 	private static Type createCustomFunctionType(ITypeSystem context,
 			IRFunctionType iRFunctionType) {
 		Type type = TypeInfoModelFactory.eINSTANCE.createType();
@@ -153,18 +159,17 @@ public class TypeUtil {
 				ITypeNames.FUNCTION));
 		List<Member> members = type.getMembers();
 
-		// override 'call' & 'override' method in order to provide better
-		// signatures
+		// override 'call' & 'apply' method to provide better signatures
 		{
 			Method callMethod = TypeInfoModelFactory.eINSTANCE.createMethod();
-			callMethod.setName("call");
+			callMethod.setName(FUNCTION_CALL);
 			callMethod.setType(ref(extractType(context,
 					iRFunctionType.getReturnType())));
 
 			List<Parameter> parameters = callMethod.getParameters();
 			Parameter thisArg = TypeInfoModelFactory.eINSTANCE
 					.createParameter();
-			thisArg.setName("thisArg");
+			thisArg.setName(FUNCTION_THIS_ARG);
 			parameters.add(thisArg);
 
 			int argNum = 1;
@@ -172,7 +177,7 @@ public class TypeUtil {
 			for (IRParameter iRParameter : iRFunctionType.getParameters()) {
 				Parameter origParameter = TypeInfoModelFactory.eINSTANCE
 						.createParameter();
-				origParameter.setName("arg" + argNum);
+				origParameter.setName(FUNCTION_ARG + argNum);
 				origParameter.setType(ref(extractType(context,
 						iRParameter.getType())));
 				ParameterKind origParameterKind = iRParameter.getKind();
@@ -191,20 +196,20 @@ public class TypeUtil {
 
 		{
 			Method applyMethod = TypeInfoModelFactory.eINSTANCE.createMethod();
-			applyMethod.setName("apply");
+			applyMethod.setName(FUNCTION_APPLY);
 			applyMethod.setType(ref(extractType(context,
 					iRFunctionType.getReturnType())));
 
 			List<Parameter> parameters = applyMethod.getParameters();
 			Parameter thisArg = TypeInfoModelFactory.eINSTANCE
 					.createParameter();
-			thisArg.setName("thisArg");
+			thisArg.setName(FUNCTION_THIS_ARG);
 			thisArg.setKind(ParameterKind.OPTIONAL);
 			parameters.add(thisArg);
 
 			Parameter argArray = TypeInfoModelFactory.eINSTANCE
 					.createParameter();
-			argArray.setName("argArray");
+			argArray.setName(FUNCTION_ARG_ARRAY);
 			ArrayType arrayType = TypeInfoModelFactory.eINSTANCE
 					.createArrayType();
 			arrayType.setItemType(TypeInfoModelFactory.eINSTANCE
