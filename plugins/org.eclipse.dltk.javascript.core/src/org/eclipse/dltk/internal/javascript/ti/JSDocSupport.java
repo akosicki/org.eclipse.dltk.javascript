@@ -15,6 +15,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -98,6 +99,7 @@ public class JSDocSupport implements IModelBuilder {
 			parseType(method, tags, JSDocTag.RETURN_TAGS, reporter, typeChecker);
 		}
 		parseParams(method, tags, reporter, typeChecker);
+		parseThis(method, tags, reporter, typeChecker);
 		parseDeprecation(method, tags, reporter);
 		parseAccessModifiers(method, tags, reporter);
 		parseConstructor(method, tags, reporter);
@@ -295,6 +297,29 @@ public class JSDocSupport implements IModelBuilder {
 		parseDeprecation(variable, tags, reporter);
 		parseAccessModifiers(variable, tags, reporter);
 		parseSuppressWarnings(variable, tags, reporter);
+	}
+
+	private void parseThis(IMethod method, JSDocTags tags,
+			JSProblemReporter reporter, ITypeChecker typeChecker) {
+		Iterator<JSDocTag> thisTagIt = tags.list(JSDocTag.THIS).iterator();
+		if (!thisTagIt.hasNext()) {
+			return;
+		}
+
+		JSDocTag thisTag = thisTagIt.next();
+		final JSType type = parseType(thisTag, requireBraces(thisTag.name()),
+				reporter);
+		if (type != null) {
+			if (typeChecker != null)
+				typeChecker.checkType(type, thisTag);
+			method.setThisType(type);
+		}
+
+		while (thisTagIt.hasNext()) {
+			JSDocTag duplicatedTag = thisTagIt.next();
+			reportProblem(reporter, JSDocProblem.DUPLICATE_TAG, duplicatedTag,
+					duplicatedTag.name());
+		}
 	}
 
 	private void parseDeprecation(IMember member, JSDocTags tags,

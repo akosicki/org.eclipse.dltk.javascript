@@ -135,6 +135,22 @@ public interface IModelBuilder {
 		ISourceRange getDocRange();
 
 		void setDocRange(ISourceRange docRange);
+
+		/**
+		 * Returns type given function is supposed to have 'this' bound to
+		 * during the invocation
+		 * 
+		 * @return this binding or <code>null</code>
+		 */
+		JSType getThisType();
+
+		/**
+		 * Sets type given function is supposed to have 'this' bound to during
+		 * the invocation
+		 * 
+		 * @param thisType
+		 */
+		void setThisType(JSType thisType);
 	}
 
 	public interface IVariable extends IMember {
