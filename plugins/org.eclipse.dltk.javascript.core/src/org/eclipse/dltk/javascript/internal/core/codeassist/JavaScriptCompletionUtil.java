@@ -11,15 +11,19 @@
  *******************************************************************************/
 package org.eclipse.dltk.javascript.internal.core.codeassist;
 
+import org.eclipse.dltk.annotations.NonNull;
+import org.eclipse.dltk.annotations.Nullable;
 import org.eclipse.dltk.ast.ASTNode;
 import org.eclipse.dltk.compiler.env.ModuleSource;
 import org.eclipse.dltk.core.ISourceModule;
 import org.eclipse.dltk.javascript.ast.ErrorExpression;
 import org.eclipse.dltk.javascript.ast.Identifier;
 import org.eclipse.dltk.javascript.ast.JSNode;
+import org.eclipse.dltk.javascript.ast.ObjectInitializer;
 import org.eclipse.dltk.javascript.ast.PropertyInitializer;
 import org.eclipse.dltk.javascript.ast.Script;
 import org.eclipse.dltk.javascript.ast.StatementBlock;
+import org.eclipse.dltk.javascript.ast.UserExpression;
 import org.eclipse.dltk.javascript.core.NodeFinder;
 import org.eclipse.dltk.javascript.parser.JavaScriptParserUtil;
 
@@ -31,7 +35,22 @@ import org.eclipse.dltk.javascript.parser.JavaScriptParserUtil;
 public class JavaScriptCompletionUtil {
 
 	public enum ExpressionType {
-		PROPERTY_INITIALIZER_VALUE, OTHER
+		PROPERTY_INITIALIZER_VALUE,
+
+		/**
+		 * Indicates position within an {@link ObjectInitializer} but not within
+		 * any nested {@link PropertyInitializer}.
+		 * 
+		 * E.g.
+		 * 
+		 * <pre>
+		 * var object = {    name   :   "Aleksander "  ,   surname  :  "Kosicki"    };
+		 *               ^^^^^                       ^^^^^^^                    ^^^^^
+		 * </pre>
+		 * 
+		 * Where ^ means between the given and the precedent column
+		 */
+		OBJECT_INITIALIZER, OTHER
 	}
 
 	public static class ExpressionContext {
@@ -44,8 +63,9 @@ public class JavaScriptCompletionUtil {
 		}
 	}
 
-	public static ExpressionType evaluateExpressionType(ISourceModule module,
-			CharSequence document, int position) {
+	public static ExpressionType evaluateExpressionType(
+			@Nullable ISourceModule module, @NonNull CharSequence document,
+			int position) {
 		final ExpressionContext context = evaluateExpressionContext(module,
 				document, position);
 		return context != null ? context.expressionType : null;
@@ -59,10 +79,37 @@ public class JavaScriptCompletionUtil {
 		return evaluateExpressionContext(script, document, position);
 	}
 
+	/**
+	 * @param node
+	 * @param position
+	 * @return <code>true</code> if given position is within the source range of
+	 *         some {@link ObjectInitializer} but now within the source range of
+	 *         any of its nested {@link PropertyInitializer}s
+	 * 
+	 * @see {@link ExpressionType#OBJECT_INITIALIZER}
+	 */
+	private static boolean isDirectlyInObjectInitializer(@NonNull ASTNode node,
+			int position) {
+		if (node instanceof UserExpression) {
+			node = ((UserExpression) node).getOriginal();
+		}
+		for (ASTNode child : node.getChilds()) {
+			if (child.start() < position && child.end() > position) {
+				return isDirectlyInObjectInitializer(child, position);
+			}
+		}
+		return node instanceof ObjectInitializer;
+	}
+
 	public static ExpressionContext evaluateExpressionContext(Script script,
 			CharSequence document, int position) {
 		if (script != null) {
 			int begin = position;
+			if (script != null
+					&& isDirectlyInObjectInitializer(script, position)) {
+				return new ExpressionContext(ExpressionType.OBJECT_INITIALIZER,
+						null);
+			}
 			while (begin > 0
 					&& Character.isWhitespace(document.charAt(begin - 1))) {
 				--begin;

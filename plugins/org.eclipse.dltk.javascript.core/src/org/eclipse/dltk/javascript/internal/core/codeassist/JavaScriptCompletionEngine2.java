@@ -701,7 +701,8 @@ public class JavaScriptCompletionEngine2 extends ScriptCompletionEngine
 			ExpressionContext expressionContext) {
 		final String[] keywords;
 		if (expressionContext != null) {
-			if (expressionContext.expressionType == ExpressionType.PROPERTY_INITIALIZER_VALUE) {
+			if (expressionContext.expressionType == ExpressionType.PROPERTY_INITIALIZER_VALUE
+					|| expressionContext.expressionType == ExpressionType.OBJECT_INITIALIZER) {
 				keywords = JavaScriptKeywords.getJavaScriptValueKeywords();
 			} else {
 				keywords = JavaScriptKeywords.getJavaScriptExpressionKeywords();
